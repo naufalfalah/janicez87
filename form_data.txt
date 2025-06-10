@@ -1,0 +1,54 @@
+Form Data Submitted:
+Property_Type_: Condo
+Postal_Code: 200 Feet Bypass Rd, Brijlalpura, Jaipur, Rajasthan, India
+Condo_Bedroom_Types: 3 Bedroom
+When_you're_collecting_your_keys?: Existing Property
+WhatsApp_Number: 967868678678678678678
+No_Label_check1: Save the mobile phone number and automatically fill in the "Automatically Fill in information Authorization Form next time
+No_Label_check2: I have read and agreed to the "Personal Information and Privacy Protection Terms"
+Date: December 2, 2024
+Time: 8:24 am
+Page_URL: https://janicez539.sg-host.com/
+User_Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36
+Remote_IP: 137.59.223.212
+Powered_by: Elementor
+form_id: eca063e
+form_name: New Form
+-------------------------
+Form Data Submitted:
+Property_Type_: HDB
+Postal_Code: 3rd Street Promenade, Santa Monica, CA 90401, USA
+HBD_Flat_Type: 3 bedroom flat
+When_you're_collecting_your_keys?: Resales
+Resales: 2024-12-17
+WhatsApp_Number: 675756
+No_Label_check1: Save the mobile phone number and automatically fill in the "Automatically Fill in information Authorization Form next time
+No_Label_check2: I have read and agreed to the "Personal Information and Privacy Protection Terms"
+Date: December 2, 2024
+Time: 8:26 am
+Page_URL: https://janicez539.sg-host.com/
+User_Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36
+Remote_IP: 137.59.223.212
+Powered_by: Elementor
+form_id: eca063e
+form_name: New Form
+-------------------------
+Form Data Submitted:
+Property_Type_: Landed
+Postal_Code: Av. 9 de Julio, Cdad. Autónoma de Buenos Aires, Argentina
+Landed_Type: Bungalow House
+Landed_Bedroom_Types: 3 bedroom
+When_you're_collecting_your_keys?: New Home
+New_Home: 2024-12-19
+WhatsApp_Number: 567567
+No_Label_check1: Save the mobile phone number and automatically fill in the "Automatically Fill in information Authorization Form next time
+No_Label_check2: I have read and agreed to the "Personal Information and Privacy Protection Terms"
+Date: December 2, 2024
+Time: 8:27 am
+Page_URL: https://janicez539.sg-host.com/
+User_Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36
+Remote_IP: 137.59.223.212
+Powered_by: Elementor
+form_id: eca063e
+form_name: New Form
+-------------------------
