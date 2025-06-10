@@ -72,7 +72,38 @@ if (!empty($whereConditions)) {
     $sql .= " WHERE " . implode(" AND ", $whereConditions);
 }
 
-// Prepare and bind parameters
+// Pagination setup
+$perPage = 10;
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($page - 1) * $perPage;
+
+// Count total rows for pagination
+$countSql = "SELECT COUNT(*) as total FROM leads";
+if (!empty($whereConditions)) {
+    $countSql .= " WHERE " . implode(" AND ", $whereConditions);
+}
+
+$countStmt = $conn->prepare($countSql);
+if ($countStmt) {
+    $types = str_repeat('s', count($params));
+    if (!empty($params)) {
+        $countStmt->bind_param($types, ...$params);
+    }
+    $countStmt->execute();
+    $countResult = $countStmt->get_result();
+    $totalRows = $countResult->fetch_assoc()['total'];
+    $countStmt->close();
+} else {
+    $totalRows = 0;
+}
+
+// Main query with LIMIT
+$sql = "SELECT * FROM leads";
+if (!empty($whereConditions)) {
+    $sql .= " WHERE " . implode(" AND ", $whereConditions);
+}
+$sql .= " ORDER BY created_at DESC LIMIT $perPage OFFSET $offset";
+
 $stmt = $conn->prepare($sql);
 if ($stmt) {
     $types = str_repeat('s', count($params));
@@ -84,10 +115,35 @@ if ($stmt) {
 } else {
     echo "Error in query preparation: " . $conn->error;
 }
+
+$leads = [];
+$leadIds = [];
+if ($result && $result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        $leads[] = $row;
+        $leadIds[] = $row['id'];
+    }
+} else {
+    $leads = [];
+}
+
+$leadDetailsMap = [];
+if (!empty($leadIds)) {
+    $idsStr = implode(',', array_map('intval', $leadIds));
+    $detailSql = "SELECT lead_id, lead_form_key, lead_form_value FROM lead_Details WHERE lead_id IN ($idsStr)";
+    $detailResult = $conn->query($detailSql);
+    if ($detailResult) {
+        while ($d = $detailResult->fetch_assoc()) {
+            $leadDetailsMap[$d['lead_id']][$d['lead_form_key']] = $d['lead_form_value'];
+        }
+    }
+}
+
 ?>
 
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -99,17 +155,58 @@ if ($stmt) {
         body {
             background-color: #f8f9fa;
         }
+
         .container {
             margin-top: 20px;
         }
-        .table th, .table td {
+
+        .table th,
+        .table td {
             max-width: 250px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            vertical-align: middle;
+        }
+
+        .table-row-lead-detail {
+            background:rgb(240, 240, 240);
+        }
+
+        .collapse {
+            display: table-row;
+        }
+
+        .collapse:not(.show) {
+            display: none;
+        }
+
+        .btn.btn-link.p-0 {
+            color: #0d6efd;
+            text-decoration: none;
+            font-size: 1.1em;
+            padding: 0;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+
+        ul.mb-0 {
+            margin-bottom: 0;
+            padding-left: 1.2em;
+        }
+
+        tr.collapse td {
+            border-top: none;
+        }
+
+        .table-row-lead:hover {
+            background-color: #f1f1f1;
+            cursor: pointer;
         }
     </style>
 </head>
+
 <body>
     <div class="container mt-3">
         <div class="row">
@@ -141,8 +238,8 @@ if ($stmt) {
                         </div>
                         <div class="col-12 col-md-4 col-lg-4">
                             <div class="mb-3">
-                                <label for="search" class="form-label">Search Name or Email</label>
-                                <input type="text" name="search" id="search" value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>" class="form-control" placeholder="Enter name or email" />
+                                <label for="search" class="form-label">Search Name, Email, Phone</label>
+                                <input type="text" name="search" id="search" value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>" class="form-control" placeholder="Enter name, email or phone number" />
                             </div>
                         </div>
                     </div>
@@ -151,7 +248,7 @@ if ($stmt) {
                         <div class="col-12 col-md-6 col-lg-6">
                             <div class="mb-3">
                                 <label for="" class="form-label">Ignore Email</label>
-                                <input type="text" name="ignore_email" class="form-control" value="<?php echo isset($_GET['ignore_email']) ? htmlspecialchars($_GET['ignore_email']) : ''; ?>" placeholder="test@test.com, test@test.com, test@test.com"/>
+                                <input type="text" name="ignore_email" class="form-control" value="<?php echo isset($_GET['ignore_email']) ? htmlspecialchars($_GET['ignore_email']) : ''; ?>" placeholder="test@test.com, test@test.com, test@test.com" />
                             </div>
                         </div>
                         <div class="col-12 col-md-6 col-lg-6">
@@ -177,35 +274,91 @@ if ($stmt) {
                         <th>Email</th>
                         <th>Phone Number</th>
                         <th>Source URL</th>
+                        <th>IP</th>
                         <th>Status</th>
                         <th>Created At</th>
                     </thead>
                     <tbody>
-                        <?php if (isset($result) && $result->num_rows > 0) { ?>
-                            <?php
-                            $key = 1;
-                            while ($row = $result->fetch_assoc()) {
-                            ?>
-                            <tr>
-                                <td><?php echo $key ?></td>
-                                <td><?php echo htmlspecialchars($row["name"]) ?></td>
-                                <td><?php echo htmlspecialchars($row["email"]) ?></td>
-                                <td><?php echo htmlspecialchars($row["phone_number"]) ?></td>
-                                <td><?php echo htmlspecialchars($row["source_url"]) ?></td>
-                                <td><?php echo htmlspecialchars($row["status"]) ?></td>
-                                <td><?php echo htmlspecialchars($row["created_at"]) ?></td>
-                            </tr>
-                            <?php
-                                $key++;
-                            }
-                            ?>
+                        <?php if (!empty($leads)) { ?>
+                            <?php $key = 1 + $offset; ?>
+                            <?php foreach ($leads as $row): ?>
+                                <tr class="table-row-lead" data-bs-toggle="collapse" data-bs-target="#lead-detail-<?= $row['id'] ?>" aria-expanded="false" aria-controls="lead-detail-<?= $row['id'] ?>">
+                                    <td>
+                                        <?= $key ?>
+                                    </td>
+                                    <td><?= htmlspecialchars($row["name"]) ?></td>
+                                    <td><?= htmlspecialchars($row["email"]) ?></td>
+                                    <td><?= htmlspecialchars($row["phone_number"]) ?></td>
+                                    <td><?= htmlspecialchars($row["source_url"]) ?></td>
+                                    <td><?= htmlspecialchars($row["ip_address"]) ?></td>
+                                    <td><?= htmlspecialchars($row["status"]) ?></td>
+                                    <td><?= htmlspecialchars($row["created_at"]) ?></td>
+                                </tr>
+                                <?php if (!empty($leadDetailsMap[$row['id']])): ?>
+                                    <tr class="table-row-lead-detail collapse" id="lead-detail-<?= $row['id'] ?>">
+                                        <td></td>
+                                        <td colspan="8">
+                                            <strong>Lead Details:</strong>
+                                            <ul class="mb-0">
+                                                <?php foreach ($leadDetailsMap[$row['id']] as $k => $v): ?>
+                                                    <li><strong><?= htmlspecialchars($k) ?>:</strong> <?= htmlspecialchars($v) ?></li>
+                                                <?php endforeach; ?>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
+                                <?php $key++; ?>
+                            <?php endforeach; ?>
                         <?php } else { ?>
                             <tr>
-                                <td colspan="7" class="text-center">No leads found.</td>
+                                <td colspan="9" class="text-center">No leads found.</td>
                             </tr>
                         <?php } ?>
                     </tbody>
                 </table>
+                <!-- Pagination -->
+                <?php
+                $totalPages = ceil($totalRows / $perPage);
+                $maxShow = 5;
+                if ($totalPages > 1):
+                    $startPage = max(1, $page - floor($maxShow / 2));
+                    $endPage = min($totalPages, $startPage + $maxShow - 1);
+                    if ($endPage - $startPage + 1 < $maxShow) {
+                        $startPage = max(1, $endPage - $maxShow + 1);
+                    }
+                ?>
+                    <nav>
+                        <ul class="pagination justify-content-center">
+                            <?php if ($startPage > 1): ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="?<?php
+                                                                $query = $_GET;
+                                                                $query['page'] = 1;
+                                                                echo http_build_query($query);
+                                                                ?>">&laquo; First</a>
+                                </li>
+                            <?php endif; ?>
+                            <?php for ($i = $startPage; $i <= $endPage; $i++):
+                                $query = $_GET;
+                                $query['page'] = $i;
+                                $url = '?' . http_build_query($query);
+                            ?>
+                                <li class="page-item <?php if ($i == $page) echo 'active'; ?>">
+                                    <a class="page-link" href="<?php echo $url; ?>"><?php echo $i; ?></a>
+                                </li>
+                            <?php endfor; ?>
+                            <?php if ($endPage < $totalPages): ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="?<?php
+                                                                $query = $_GET;
+                                                                $query['page'] = $totalPages;
+                                                                echo http_build_query($query);
+                                                                ?>">Last &raquo;</a>
+                                </li>
+                            <?php endif; ?>
+                        </ul>
+                    </nav>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -217,21 +370,22 @@ if ($stmt) {
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 
 <script>
-$(function() {
-    $('input[name="datefilter"]').daterangepicker({
-        autoUpdateInput: false,
-        locale: {
-            cancelLabel: 'Clear'
-        }
-    });
+    $(function() {
+        $('input[name="datefilter"]').daterangepicker({
+            autoUpdateInput: false,
+            locale: {
+                cancelLabel: 'Clear'
+            }
+        });
 
-    $('input[name="datefilter"]').on('apply.daterangepicker', function(ev, picker) {
-        $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
-    });
+        $('input[name="datefilter"]').on('apply.daterangepicker', function(ev, picker) {
+            $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+        });
 
-    $('input[name="datefilter"]').on('cancel.daterangepicker', function(ev, picker) {
-        $(this).val('');
+        $('input[name="datefilter"]').on('cancel.daterangepicker', function(ev, picker) {
+            $(this).val('');
+        });
     });
-});
 </script>
+
 </html>
